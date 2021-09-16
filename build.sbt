@@ -26,14 +26,20 @@ lazy val runtime = (project in file("runtime"))
   .settings(libraryDependencies ++= catsEffect ++ akka)
   .settings(name := "akka-persistence-tagless-runtime")
 
+lazy val circeHelpers = (project in file("circe"))
+  .dependsOn(core)
+  .settings(commonSettings: _*)
+  .settings(libraryDependencies ++= circe)
+  .settings(name := "akka-persistence-tagless-circe-helpers")
+
 lazy val example = (project in file("example"))
-  .dependsOn(core, runtime)
+  .dependsOn(core, runtime, circeHelpers)
   .settings(commonSettings: _*)
   .settings(name := "akka-persistence-tagless-example")
 
 lazy val root = project
   .in(file("."))
-  .aggregate(core, runtime, example)
+  .aggregate(core, runtime, circeHelpers, example)
   .settings(commonSettings: _*)
   .settings(
     name := "akka-persistence-tagless",

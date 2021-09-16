@@ -1,4 +1,4 @@
-package akka.persistence.tagless.core.typeclass
+package akka.persistence.tagless.core.typeclass.event
 
 import akka.persistence.tagless.\/
 

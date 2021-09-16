@@ -2,11 +2,11 @@ package akka.persistence.tagless.runtime
 
 import akka.actor.typed.ActorSystem
 import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, EntityTypeKey}
-import akka.persistence.tagless.core.typeclass.{
+import akka.persistence.tagless.core.typeclass.entity.EntityNameProvider
+import akka.persistence.tagless.core.typeclass.protocol.{
   CommandRouter,
-  Encoded,
   EntityIDEncoder,
-  EntityNameProvider
+  OutgoingCommand
 }
 import akka.persistence.tagless.runtime.data.{Command, Reply}
 import akka.util.Timeout
@@ -23,21 +23,22 @@ final class ShardingCommandRouter[F[_], ID](implicit
     nameProvider: EntityNameProvider[ID],
     F: Async[F]
 ) extends CommandRouter[F, ID] {
-  def routerForID[Code](id: ID): Encoded[Code, *] ~> F = new (Encoded[Code, *] ~> F) {
-    def apply[A](fa: Encoded[Code, A]): F[A] = {
-      F.fromFuture {
-        F.delay {
-          sharding.entityRefFor(
-            EntityTypeKey[Command[Code]](nameProvider.name),
-            idEncoder(id)
-          ) ? Command(
-            idEncoder(id),
-            fa.payload
-          )
-        }
-      } >>= { case Reply(payload) => fa.decoder.decode(payload).pure[F] }
+  def routerForID[Code](id: ID): OutgoingCommand[Code, *] ~> F =
+    new (OutgoingCommand[Code, *] ~> F) {
+      def apply[A](fa: OutgoingCommand[Code, A]): F[A] = {
+        F.fromFuture {
+          F.delay {
+            sharding.entityRefFor(
+              EntityTypeKey[Command[Code]](nameProvider.name),
+              idEncoder(id)
+            ) ? Command(
+              idEncoder(id),
+              fa.payload
+            )
+          }
+        } >>= { case Reply(payload) => fa.replyDecoder.decode(payload).pure[F] }
+      }
     }
-  }
 }
 
 object ShardingCommandRouter {

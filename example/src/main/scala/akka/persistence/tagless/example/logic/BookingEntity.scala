@@ -1,7 +1,7 @@
 package akka.persistence.tagless.example.logic
 
 import akka.persistence.tagless.\/
-import akka.persistence.tagless.core.typeclass.Entity
+import akka.persistence.tagless.core.typeclass.entity.Entity
 import akka.persistence.tagless.example.algebra.BookingAlg
 import akka.persistence.tagless.example.algebra.BookingAlg.BookingAlreadyExists
 import akka.persistence.tagless.example.data.Booking._

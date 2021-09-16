@@ -1,6 +1,6 @@
 package akka.persistence.tagless.example.logic
 
-import akka.persistence.tagless.core.typeclass.Repository
+import akka.persistence.tagless.core.typeclass.entity.Repository
 import akka.persistence.tagless.example.algebra.{BookingAlg, BookingRepositoryAlg}
 import akka.persistence.tagless.example.data.Booking.ClientId
 import cats.Monad
