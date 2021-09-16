@@ -1,4 +1,4 @@
-package akka.persistence.tagless.example
+package akka.persistence.tagless.example.protocol
 
 import akka.persistence.tagless.\/
 import akka.persistence.tagless.circe.{CirceCommandProtocol, CirceIncomingCommand}
@@ -11,7 +11,6 @@ import akka.persistence.tagless.core.typeclass.protocol.{
 import akka.persistence.tagless.example.algebra.BookingAlg
 import akka.persistence.tagless.example.algebra.BookingAlg.BookingAlreadyExists
 import akka.persistence.tagless.example.data.Booking.{BookingStatus, ClientId, ConcertId, Seat}
-import akka.persistence.tagless.example.data.BookingCommand
 import cats.data.NonEmptyList
 import io.circe.generic.auto._
 import io.circe.{Decoder, Json}

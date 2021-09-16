@@ -1,4 +1,4 @@
-package akka.persistence.tagless.example.data
+package akka.persistence.tagless.example.protocol
 
 import akka.persistence.tagless.example.data.Booking.{ClientId, ConcertId, Seat}
 import cats.data.NonEmptyList
