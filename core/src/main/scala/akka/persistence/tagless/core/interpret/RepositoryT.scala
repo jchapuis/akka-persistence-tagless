@@ -1,6 +1,5 @@
 package akka.persistence.tagless.core.interpret
 import akka.persistence.tagless.core.data.{EventsFolder, Folded}
-import akka.persistence.tagless.core.typeclass._
 import akka.persistence.tagless.core.typeclass.entity.Repository
 import akka.persistence.tagless.core.typeclass.event.EventApplier
 import akka.persistence.tagless.core.typeclass.protocol.{Command, CommandProtocol, CommandRouter}
