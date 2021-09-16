@@ -15,7 +15,7 @@ import cats.data.NonEmptyList
 import io.circe.generic.auto._
 import io.circe.{Decoder, Json}
 
-class BookingCommandProtocol[F[_]] extends CirceCommandProtocol[BookingAlg] {
+class BookingCommandProtocol extends CirceCommandProtocol[BookingAlg] {
   override def client: BookingAlg[OutgoingCommand[Json, *]] =
     new BookingAlg[OutgoingCommand[Json, *]] {
       def place(
@@ -31,16 +31,15 @@ class BookingCommandProtocol[F[_]] extends CirceCommandProtocol[BookingAlg] {
   override def server: Decoder[Json, IncomingCommand[BookingAlg, Json]] =
     implicitly[io.circe.Decoder[BookingCommand]].map {
       case BookingCommand.PlaceBooking(clientId, concertId, seats) =>
-        CirceIncomingCommand[BookingAlg, BookingAlreadyExists \/ Unit](
-          new Command[BookingAlg, BookingAlreadyExists \/ Unit] {
-            def run[G[_]](alg: BookingAlg[G]): G[BookingAlreadyExists \/ Unit] =
-              alg.place(clientId, concertId, seats)
-          }
-        )
+        new CirceIncomingCommand[BookingAlg, BookingAlreadyExists \/ Unit] {
+          def run[G[_]](alg: BookingAlg[G]): G[BookingAlreadyExists \/ Unit] =
+            alg.place(clientId, concertId, seats)
+        }
+
       case BookingCommand.Status =>
-        CirceIncomingCommand[BookingAlg, BookingStatus](new Command[BookingAlg, BookingStatus] {
+        new CirceIncomingCommand[BookingAlg, BookingStatus] {
           def run[G[_]](alg: BookingAlg[G]): G[BookingStatus] = alg.status
-        })
+        }
     }
 
 }

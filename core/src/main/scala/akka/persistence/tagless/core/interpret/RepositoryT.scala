@@ -2,7 +2,11 @@ package akka.persistence.tagless.core.interpret
 import akka.persistence.tagless.core.data.{EventsFolder, Folded}
 import akka.persistence.tagless.core.typeclass.entity.Repository
 import akka.persistence.tagless.core.typeclass.event.EventApplier
-import akka.persistence.tagless.core.typeclass.protocol.{Command, CommandProtocol, CommandRouter}
+import akka.persistence.tagless.core.typeclass.protocol.{
+  CommandProtocol,
+  CommandRouter,
+  IncomingCommand
+}
 import cats.tagless.FunctorK
 import cats.tagless.implicits._
 
@@ -14,7 +18,7 @@ final class RepositoryT[F[_], S, E, ID, Code, Alg[_[_]]: FunctorK](implicit
 ) extends Repository[F, ID, Alg] {
   def entityFor(id: ID): Alg[F] = commandProtocol.client.mapK(commandRouter.routerForID(id))
 
-  def runCommand[A](state: S, command: Command[Alg, A]): F[Folded[E, A]] =
+  def runCommand(state: S, command: IncomingCommand[Alg, _]): F[Folded[E, command.Reply]] =
     command.run(commandProcessor).run(EventsFolder(state, eventApplier))
 }
 
