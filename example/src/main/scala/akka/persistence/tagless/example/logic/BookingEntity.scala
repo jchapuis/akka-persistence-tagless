@@ -11,8 +11,9 @@ import cats.syntax.applicative._
 import cats.syntax.either._
 import cats.syntax.flatMap._
 import cats.syntax.functor._
+import cats.conversions.all._
 
-class BookingEntity[F[+_]: Monad](implicit entity: Entity[F, Option[Booking], BookingEvent])
+class BookingEntity[F[_]: Monad](implicit entity: Entity[F, Option[Booking], BookingEvent])
     extends BookingAlg[F] {
   import entity._
 

@@ -29,7 +29,7 @@ final class ShardingCommandRouter[F[_], ID](implicit
         F.fromFuture {
           F.delay {
             sharding.entityRefFor(
-              EntityTypeKey[Command[Code]](nameProvider.name),
+              EntityTypeKey[Command[Code]](nameProvider()),
               idEncoder(id)
             ) ? Command(idEncoder(id), fa.payload)
           }
