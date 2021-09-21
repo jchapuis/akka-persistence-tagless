@@ -1,19 +1,23 @@
 package akka.persistence.tagless.example.algebra
 
 import akka.persistence.tagless.\/
-import akka.persistence.tagless.example.data.Booking.{BookingStatus, ClientId, ConcertId, Seat}
 import akka.persistence.tagless.example.algebra.BookingAlg.BookingAlreadyExists
-import cats.data.NonEmptyList
+import akka.persistence.tagless.example.data.Booking.{BookingID, BookingStatus, LatLon}
+import cats.tagless.{Derive, FunctorK}
 
 trait BookingAlg[F[_]] {
   def place(
-      clientId: ClientId,
-      concertId: ConcertId,
-      seats: NonEmptyList[Seat]
+      bookingID: BookingID,
+      passengerCount: Int,
+      origin: LatLon,
+      destination: LatLon
   ): F[BookingAlreadyExists \/ Unit]
   def status: F[BookingStatus]
 }
 
 object BookingAlg {
-  case class BookingAlreadyExists(clientId: ClientId, concertId: ConcertId)
+  final case class BookingAlreadyExists(rideID: BookingID)
+
+  implicit def functorKInstance: FunctorK[BookingAlg] =
+    Derive.functorK[BookingAlg]
 }

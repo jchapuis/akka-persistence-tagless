@@ -4,7 +4,8 @@ val commonSettings = Seq(
   Compile / scalacOptions --= Seq("-language:implicitConversions", "-Xsource:2.14"),
   addCompilerPlugin("org.typelevel" % "kind-projector" % "0.13.1" cross CrossVersion.full),
   wartremoverExcluded += sourceManaged.value,
-  Compile / wartremoverErrors ++= Warts.all,
+  Compile / wartremoverErrors ++= Warts
+    .allBut(Wart.Any, Wart.Nothing, Wart.ImplicitParameter, Wart.Throw),
   coverageExcludedPackages := "<empty>;akka.persistence.tagless.test.*"
 )
 
@@ -23,7 +24,7 @@ lazy val core = (project in file("core"))
 lazy val runtime = (project in file("runtime"))
   .dependsOn(core)
   .settings(commonSettings: _*)
-  .settings(libraryDependencies ++= catsEffect ++ akka)
+  .settings(libraryDependencies ++= catsEffectStd ++ akka)
   .settings(name := "akka-persistence-tagless-runtime")
 
 lazy val circeHelpers = (project in file("circe"))
@@ -35,6 +36,7 @@ lazy val circeHelpers = (project in file("circe"))
 lazy val example = (project in file("example"))
   .dependsOn(core, runtime, circeHelpers)
   .settings(commonSettings: _*)
+  .settings(libraryDependencies ++= catsEffect ++ http4s)
   .settings(name := "akka-persistence-tagless-example")
 
 lazy val root = project

@@ -1,23 +1,25 @@
 package akka.persistence.tagless.example.data
 
-import akka.persistence.tagless.example.data.Booking.{BookingStatus, ClientId, ConcertId, Seat}
-import cats.data.NonEmptyList
+import akka.persistence.tagless.example.data.Booking._
 
-case class Booking(
-    clientId: ClientId,
-    concertId: ConcertId,
-    seats: NonEmptyList[Seat],
+import java.util.UUID
+
+final case class Booking(
+    id: BookingID,
+    origin: LatLon,
+    destination: LatLon,
+    passengerCount: Int,
     status: BookingStatus
 )
 
 object Booking {
-  case class ClientId(id: String)
-  case class ConcertId(id: String)
-  case class Seat(number: Int)
+  final case class BookingID(id: UUID) extends AnyVal
+  final case class LatLon(lat: Double, lon: Double)
   sealed trait BookingStatus
   object BookingStatus {
     object Pending extends BookingStatus
-    object Paid extends BookingStatus
-    object None extends BookingStatus
+    object Scheduled extends BookingStatus
+    object Canceled extends BookingStatus
+    object Unknown extends BookingStatus
   }
 }

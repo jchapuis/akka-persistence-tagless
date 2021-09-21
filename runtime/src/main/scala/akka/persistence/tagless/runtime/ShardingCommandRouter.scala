@@ -31,10 +31,7 @@ final class ShardingCommandRouter[F[_], ID](implicit
             sharding.entityRefFor(
               EntityTypeKey[Command[Code]](nameProvider.name),
               idEncoder(id)
-            ) ? Command(
-              idEncoder(id),
-              fa.payload
-            )
+            ) ? Command(idEncoder(id), fa.payload)
           }
         } >>= { case Reply(payload) => fa.replyDecoder.decode(payload).pure[F] }
       }
@@ -42,13 +39,12 @@ final class ShardingCommandRouter[F[_], ID](implicit
 }
 
 object ShardingCommandRouter {
-  def apply[F[_], ID](implicit
+  implicit def apply[F[_], ID](implicit
       sharding: ClusterSharding,
       actorSystem: ActorSystem[_],
       askTimeout: Timeout,
       idEncoder: EntityIDEncoder[ID],
       nameProvider: EntityNameProvider[ID],
       F: Async[F]
-  ): ShardingCommandRouter[F, ID] =
-    new ShardingCommandRouter
+  ): CommandRouter[F, ID] = new ShardingCommandRouter
 }

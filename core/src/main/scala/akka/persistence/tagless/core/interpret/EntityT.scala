@@ -34,7 +34,6 @@ final class EntityT[F[_], S, E, A](
 }
 
 object EntityT extends EntityRunFunctions {
-
   def writer[F[_]: Applicative, S, E](newEvents: NonEmptyChain[E]): EntityT[F, S, E, Unit] =
     new EntityT((_, existing) => write(newEvents)(existing))
 

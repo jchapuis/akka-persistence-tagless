@@ -7,29 +7,30 @@ import akka.persistence.tagless.example.algebra.BookingAlg.BookingAlreadyExists
 import akka.persistence.tagless.example.data.Booking._
 import akka.persistence.tagless.example.data.{Booking, BookingEvent}
 import cats.Monad
-import cats.data.NonEmptyList
 import cats.syntax.applicative._
 import cats.syntax.either._
 import cats.syntax.flatMap._
 import cats.syntax.functor._
 
-class BookingEntity[F[_]: Monad](implicit entity: Entity[F, Option[Booking], BookingEvent])
+class BookingEntity[F[+_]: Monad](implicit entity: Entity[F, Option[Booking], BookingEvent])
     extends BookingAlg[F] {
   import entity._
 
   def place(
-      clientId: ClientId,
-      concertId: ConcertId,
-      seats: NonEmptyList[Seat]
+      bookingID: BookingID,
+      passengerCount: Int,
+      origin: LatLon,
+      destination: LatLon
   ): F[BookingAlreadyExists \/ Unit] =
     read >>= {
       case Some(_) =>
-        write(BookingEvent.BookingPlaced(clientId, concertId, seats)).map(_.asRight)
-      case None => BookingAlreadyExists(clientId, concertId).asLeft.pure
+        write(BookingEvent.BookingPlaced(bookingID, origin, destination, passengerCount))
+          .map(_.asRight)
+      case None => BookingAlreadyExists(bookingID).asLeft.pure
     }
 
   def status: F[BookingStatus] = read >>= {
     case Some(booking) => booking.status.pure
-    case None          => BookingStatus.None.pure[F]
+    case None          => BookingStatus.Unknown.pure[F]
   }
 }

@@ -1,12 +1,15 @@
 package akka.persistence.tagless.example.protocol
 
-import akka.persistence.tagless.example.data.Booking.{ClientId, ConcertId, Seat}
-import cats.data.NonEmptyList
+import akka.persistence.tagless.example.data.Booking.{LatLon, BookingID}
 
 sealed trait BookingCommand
 
 object BookingCommand {
-  final case class PlaceBooking(clientId: ClientId, concertId: ConcertId, seats: NonEmptyList[Seat])
-      extends BookingCommand
+  final case class PlaceBooking(
+      bookingID: BookingID,
+      passengerCount: Int,
+      origin: LatLon,
+      destination: LatLon
+  ) extends BookingCommand
   final case object Status extends BookingCommand
 }
