@@ -22,7 +22,7 @@ import org.http4s.dsl.io._
 import akka.persistence.tagless.runtime.ShardingCommandRouter._
 import akka.persistence.tagless.core.interpret.RepositoryT._
 import akka.persistence.tagless.core.interpret.EntityT._
-import akka.persistence.tagless.example.algebra.BookingAlg
+import akka.persistence.tagless.example.algebra.{BookingAlg, BookingRepositoryAlg}
 import akka.persistence.tagless.example.data.{Booking, BookingEvent}
 import cats.Monad
 import io.circe.Json
@@ -33,24 +33,21 @@ import cats.effect.syntax.all._
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-
+import akka.persistence.tagless.runtime.syntax.deploy._
 object Main extends IOApp {
-  implicit val actorSystem: ActorSystem[Nothing] =
+  private implicit val actorSystem: ActorSystem[Nothing] =
     ActorSystem.wrap(akka.actor.ActorSystem("bookings-as"))
-  implicit val clusterSharding: ClusterSharding = ClusterSharding(actorSystem)
-  implicit val commandProtocol: BookingCommandProtocol = new BookingCommandProtocol
-  implicit val eventApplier: BookingEventApplier = new BookingEventApplier
-  implicit val entityT: EntityLift[EntityT[IO, Option[Booking], BookingEvent, *], IO, Option[
-    Booking
-  ], BookingEvent] = EntityT.instance[IO, Option[Booking], BookingEvent]
-  implicit val bookingEntity: BookingEntity[EntityT[IO, Option[Booking], BookingEvent, *]] =
-    new BookingEntity
-  implicit val repositoryT =
-    RepositoryT.instance[IO, Option[Booking], BookingEvent, BookingID, Json, BookingAlg]
-  implicit val bookingEntityNameProvider: EntityNameProvider[BookingID] = () => "booking"
-  implicit val idEncoder: EntityIDEncoder[BookingID] = _.id.toString
-  implicit val askTimeout: Timeout = Timeout(10.seconds)
-  val bookingRepository = new BookingRepository[IO]()
+  private implicit val clusterSharding: ClusterSharding = ClusterSharding(actorSystem)
+  private implicit val commandProtocol: BookingCommandProtocol = new BookingCommandProtocol
+  private implicit val eventApplier: BookingEventApplier = new BookingEventApplier
+
+  private implicit val bookingEntityNameProvider: EntityNameProvider[BookingID] = () => "booking"
+  private implicit val idEncoder: EntityIDEncoder[BookingID] = _.id.toString
+  private implicit val askTimeout: Timeout = Timeout(10.seconds)
+  private val bookingRepository: BookingRepositoryAlg[IO] =
+    createRepository[IO, BookingAlg, BookingRepositoryAlg, Option[
+      Booking
+    ], BookingEvent, BookingID, Json](BookingEntity(_), BookingRepository(_))
 
   private val httpService = HttpRoutes
     .of[IO] {

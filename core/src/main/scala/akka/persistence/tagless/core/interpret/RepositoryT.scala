@@ -11,7 +11,7 @@ import cats.tagless.FunctorK
 import cats.tagless.implicits._
 
 final class RepositoryT[F[_], S, E, ID, Code, Alg[_[_]]: FunctorK](implicit
-    commandProcessor: Alg[EntityT[F, S, E, *]],
+    entity: Alg[EntityT[F, S, E, *]],
     commandProtocol: CommandProtocol[Alg, Code],
     commandRouter: CommandRouter[F, ID],
     eventApplier: EventApplier[S, E]
@@ -22,11 +22,11 @@ final class RepositoryT[F[_], S, E, ID, Code, Alg[_[_]]: FunctorK](implicit
       state: S,
       command: IncomingCommand[EntityT[F, S, E, *], Alg, _]
   ): F[Folded[E, command.Reply]] =
-    command.runWith(commandProcessor).run(EventsFolder(state, eventApplier))
+    command.runWith(entity).run(EventsFolder(state, eventApplier))
 }
 
 object RepositoryT {
-  implicit def instance[F[_], S, E, ID, Code, Alg[_[_]]: FunctorK](implicit
+  implicit def apply[F[_], S, E, ID, Code, Alg[_[_]]: FunctorK](implicit
       entity: Alg[EntityT[F, S, E, *]],
       commandProtocol: CommandProtocol[Alg, Code],
       commandRouter: CommandRouter[F, ID],
