@@ -7,6 +7,7 @@ object Dependencies {
   lazy val akkaClusterTyped = "com.typesafe.akka" %% "akka-cluster-typed"
   lazy val akkaClusterShardingTyped =
     "com.typesafe.akka" %% "akka-cluster-sharding-typed"
+  lazy val akkaPersistenceTestkit = "com.typesafe.akka" %% "akka-persistence-testkit"
 
   lazy val akka =
     Seq(
@@ -15,6 +16,8 @@ object Dependencies {
       akkaClusterShardingTyped,
       akkaPersistenceTyped
     ).map(_ % akkaVersion)
+
+  lazy val akkaTest = Seq(akkaPersistenceTestkit).map(_ % akkaVersion)
 
   lazy val catsVersion = "2.6.1"
   lazy val cats =
@@ -44,4 +47,7 @@ object Dependencies {
     "io.circe" %% "circe-generic",
     "io.circe" %% "circe-parser"
   ).map(_ % circeVersion)
+
+  lazy val logbackVersion = "1.2.6"
+  lazy val logback = Seq("ch.qos.logback" % "logback-classic" % logbackVersion)
 }

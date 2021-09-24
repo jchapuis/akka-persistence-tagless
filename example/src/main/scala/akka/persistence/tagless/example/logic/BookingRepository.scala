@@ -5,7 +5,7 @@ import akka.persistence.tagless.example.algebra.{BookingAlg, BookingRepositoryAl
 import akka.persistence.tagless.example.data.Booking.BookingID
 import cats.Monad
 
-case class BookingRepository[F[_]: Monad](repository: Repository[F, BookingID, BookingAlg])
+final case class BookingRepository[F[_]: Monad](repository: Repository[F, BookingID, BookingAlg])
     extends BookingRepositoryAlg[F] {
   import repository._
   def bookingFor(bookingID: BookingID): BookingAlg[F] = entityFor(bookingID)

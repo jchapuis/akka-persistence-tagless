@@ -2,54 +2,37 @@ package akka.persistence.tagless.example
 
 import akka.actor.typed.ActorSystem
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
-import akka.persistence.tagless.core.interpret.{EntityLift, EntityT, RepositoryT}
-import akka.persistence.tagless.core.typeclass.entity.{Entity, EntityNameProvider}
+import akka.persistence.tagless.core.interpret.EntityT._
+import akka.persistence.tagless.core.typeclass.entity.EntityNameProvider
 import akka.persistence.tagless.core.typeclass.protocol.EntityIDEncoder
+import akka.persistence.tagless.example.algebra.{BookingAlg, BookingRepositoryAlg}
 import akka.persistence.tagless.example.data.Booking.{BookingID, LatLon}
+import akka.persistence.tagless.example.data.{Booking, BookingEvent}
 import akka.persistence.tagless.example.logic.{
   BookingEntity,
   BookingEventApplier,
   BookingRepository
 }
 import akka.persistence.tagless.example.protocol.BookingCommandProtocol
+import akka.persistence.tagless.runtime.syntax.deploy._
+import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.util.Timeout
 import cats.effect._
+import com.typesafe.config.ConfigFactory
+import io.circe.Json
 import io.circe.generic.auto._
 import org.http4s.HttpRoutes
 import org.http4s.blaze.server.BlazeServerBuilder
 import org.http4s.circe.CirceEntityCodec._
 import org.http4s.dsl.io._
-import akka.persistence.tagless.runtime.ShardingCommandRouter._
-import akka.persistence.tagless.core.interpret.RepositoryT._
-import akka.persistence.tagless.core.interpret.EntityT._
-import akka.persistence.tagless.example.algebra.{BookingAlg, BookingRepositoryAlg}
-import akka.persistence.tagless.example.data.{Booking, BookingEvent}
-import cats.Monad
-import io.circe.Json
-import cats.effect.implicits._
-import cats.effect.instances.all._
-import cats.effect.syntax.all._
-
+import cats.syntax.show._
 import java.util.UUID
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import akka.persistence.tagless.runtime.syntax.deploy._
+
 object Main extends IOApp {
-  private implicit val actorSystem: ActorSystem[Nothing] =
-    ActorSystem.wrap(akka.actor.ActorSystem("bookings-as"))
-  private implicit val clusterSharding: ClusterSharding = ClusterSharding(actorSystem)
-  private implicit val commandProtocol: BookingCommandProtocol = new BookingCommandProtocol
-  private implicit val eventApplier: BookingEventApplier = new BookingEventApplier
+  private final case class BookingRequest(passengerCount: Int, origin: LatLon, destination: LatLon)
 
-  private implicit val bookingEntityNameProvider: EntityNameProvider[BookingID] = () => "booking"
-  private implicit val idEncoder: EntityIDEncoder[BookingID] = _.id.toString
-  private implicit val askTimeout: Timeout = Timeout(10.seconds)
-  private val bookingRepository: BookingRepositoryAlg[IO] =
-    createRepository[IO, BookingAlg, BookingRepositoryAlg, Option[
-      Booking
-    ], BookingEvent, BookingID, Json](BookingEntity(_), BookingRepository(_))
-
-  private val httpService = HttpRoutes
+  private def httpService(bookingRepository: BookingRepositoryAlg[IO]) = HttpRoutes
     .of[IO] {
       case req @ POST -> Root / "booking" =>
         for {
@@ -64,8 +47,9 @@ object Main extends IOApp {
               bookingRequest.destination
             )
             .flatMap {
-              case Left(alreadyExists) => BadRequest(alreadyExists)
-              case Right(_)            => Accepted()
+              case Left(alreadyExists) =>
+                BadRequest(show"Booking with ${alreadyExists.rideID.id} already exists")
+              case Right(_) => Accepted(bookingID)
             }
         } yield result
       case GET -> Root / "booking" / UUIDVar(bookingID) / "status" =>
@@ -73,13 +57,35 @@ object Main extends IOApp {
     }
     .orNotFound
 
-  def run(args: List[String]): IO[ExitCode] =
-    BlazeServerBuilder[IO](global)
-      .bindHttp(8080, "localhost")
-      .withHttpApp(httpService)
-      .resource
-      .use(_ => IO.never)
+  def run(args: List[String]): IO[ExitCode] = {
+    implicit val actorSystem: ActorSystem[Nothing] =
+      ActorSystem.wrap(
+        akka.actor.ActorSystem(
+          "bookings-as",
+          PersistenceTestKitPlugin.config.withFallback(ConfigFactory.defaultApplication).resolve()
+        )
+      )
+    implicit val clusterSharding: ClusterSharding = ClusterSharding(actorSystem)
+    implicit val commandProtocol: BookingCommandProtocol = new BookingCommandProtocol
+    implicit val eventApplier: BookingEventApplier = new BookingEventApplier
+    implicit val bookingEntityNameProvider: EntityNameProvider[BookingID] = () => "booking"
+    implicit val idEncoder: EntityIDEncoder[BookingID] = _.id.toString
+    implicit val askTimeout: Timeout = Timeout(10.seconds)
+    deployEntity[IO, Option[
+      Booking
+    ], BookingEvent, BookingID, Json, BookingAlg, BookingRepositoryAlg](
+      BookingEntity(_),
+      BookingRepository(_),
+      Option.empty[Booking]
+    ).map { case (bookingRepository, _) =>
+      httpService(bookingRepository)
+    }.flatMap(service =>
+      BlazeServerBuilder[IO]
+        .bindHttp(8080, "localhost")
+        .withHttpApp(service)
+        .resource
+    ).use(_ => IO.fromFuture(IO(actorSystem.whenTerminated)))
       .as(ExitCode.Success)
+  }
 
-  final case class BookingRequest(passengerCount: Int, origin: LatLon, destination: LatLon)
 }

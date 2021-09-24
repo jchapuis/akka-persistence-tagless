@@ -36,8 +36,8 @@ lazy val circeHelpers = (project in file("circe"))
 lazy val example = (project in file("example"))
   .dependsOn(core, runtime, circeHelpers)
   .settings(commonSettings: _*)
-  .settings(libraryDependencies ++= catsEffect ++ http4s)
-  .settings(name := "akka-persistence-tagless-example")
+  .settings(libraryDependencies ++= catsEffect ++ http4s ++ akkaTest ++ logback)
+  .settings(name := "akka-persistence-tagless-example", run / fork := true)
 
 lazy val root = project
   .in(file("."))

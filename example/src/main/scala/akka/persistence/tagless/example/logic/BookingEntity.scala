@@ -13,7 +13,7 @@ import cats.syntax.flatMap._
 import cats.syntax.functor._
 import cats.conversions.all._
 
-case class BookingEntity[F[_]: Monad](entity: Entity[F, Option[Booking], BookingEvent])
+final case class BookingEntity[F[_]: Monad](entity: Entity[F, Option[Booking], BookingEvent])
     extends BookingAlg[F] {
   import entity._
 
@@ -24,10 +24,10 @@ case class BookingEntity[F[_]: Monad](entity: Entity[F, Option[Booking], Booking
       destination: LatLon
   ): F[BookingAlreadyExists \/ Unit] =
     read >>= {
-      case Some(_) =>
+      case Some(_) => BookingAlreadyExists(bookingID).asLeft.pure
+      case None =>
         write(BookingEvent.BookingPlaced(bookingID, origin, destination, passengerCount))
           .map(_.asRight)
-      case None => BookingAlreadyExists(bookingID).asLeft.pure
     }
 
   def status: F[BookingStatus] = read >>= {

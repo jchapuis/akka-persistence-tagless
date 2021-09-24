@@ -23,7 +23,7 @@ class BookingCommandProtocol extends CirceCommandProtocol[BookingAlg] {
         )
 
       def status: OutgoingCommand[Json, BookingStatus] =
-        outgoingCommand[BookingCommand.Status.type, BookingStatus](BookingCommand.Status)
+        outgoingCommand[BookingCommand, BookingStatus](BookingCommand.Status)
     }
 
   override def server[F[_]]: Decoder[Json, IncomingCommand[F, BookingAlg, Json]] =
