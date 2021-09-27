@@ -26,11 +26,14 @@ import org.http4s.blaze.server.BlazeServerBuilder
 import org.http4s.circe.CirceEntityCodec._
 import org.http4s.dsl.io._
 import cats.syntax.show._
+import cats.syntax.applicative._
+import cats.syntax.either._
 import java.util.UUID
 import scala.concurrent.duration._
 
 object Main extends IOApp {
   private final case class BookingRequest(passengerCount: Int, origin: LatLon, destination: LatLon)
+  private final case class BookingPatch(origin: Option[LatLon], destination: Option[LatLon])
 
   private def httpService(bookingRepository: BookingRepositoryAlg[IO]) = HttpRoutes
     .of[IO] {
@@ -38,7 +41,7 @@ object Main extends IOApp {
         for {
           bookingRequest <- req.as[BookingRequest]
           bookingID <- IO(UUID.randomUUID()).map(BookingID)
-          result <- bookingRepository
+          reply <- bookingRepository
             .bookingFor(bookingID)
             .place(
               bookingID,
@@ -46,14 +49,39 @@ object Main extends IOApp {
               bookingRequest.origin,
               bookingRequest.destination
             )
-            .flatMap {
-              case Left(alreadyExists) =>
-                BadRequest(show"Booking with ${alreadyExists.rideID.id} already exists")
-              case Right(_) => Accepted(bookingID)
-            }
+          result <- reply match {
+            case Left(alreadyExists) =>
+              BadRequest(show"Booking with ${alreadyExists.bookingID.id} already exists")
+            case Right(_) => Accepted(bookingID)
+          }
         } yield result
-      case GET -> Root / "booking" / UUIDVar(bookingID) / "status" =>
-        bookingRepository.bookingFor(BookingID(bookingID)).status.flatMap(Ok(_))
+      case GET -> Root / "booking" / UUIDVar(id) / "status" =>
+        bookingRepository.bookingFor(BookingID(id)).status.flatMap(Ok(_))
+      case POST -> Root / "booking" / UUIDVar(id) / "cancel" =>
+        bookingRepository.bookingFor(BookingID(id)).cancel.flatMap(_ => Ok())
+      case req @ PATCH -> Root / "booking" / UUIDVar(id) =>
+        for {
+          bookingPatch <- req.as[BookingPatch]
+          bookingID = BookingID(id)
+          reply <- (bookingPatch.origin, bookingPatch.destination) match {
+            case (Some(newOrigin), Some(newDestination)) =>
+              bookingRepository
+                .bookingFor(bookingID)
+                .changeOriginAndDestination(newOrigin, newDestination)
+            case (Some(newOrigin), None) =>
+              bookingRepository
+                .bookingFor(bookingID)
+                .changeOrigin(newOrigin)
+            case (None, Some(newDestination)) =>
+              bookingRepository.bookingFor(bookingID).changeDestination(newDestination)
+            case (None, None) => ().asRight.pure[IO]
+          }
+          result <- reply match {
+            case Left(_) =>
+              BadRequest(show"Booking with $id is unknown")
+            case Right(_) => Ok()
+          }
+        } yield result
     }
     .orNotFound
 
