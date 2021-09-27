@@ -2,7 +2,8 @@ package akka.persistence.tagless.example.algebra
 
 import akka.persistence.tagless.\/
 import akka.persistence.tagless.example.algebra.BookingAlg.{BookingAlreadyExists, BookingUnknown}
-import akka.persistence.tagless.example.data.Booking.{BookingID, BookingStatus, LatLon}
+import akka.persistence.tagless.example.data.Booking
+import akka.persistence.tagless.example.data.Booking.{BookingID, LatLon}
 import cats.tagless.{Derive, FunctorK}
 
 trait BookingAlg[F[_]] {
@@ -12,8 +13,7 @@ trait BookingAlg[F[_]] {
       origin: LatLon,
       destination: LatLon
   ): F[BookingAlreadyExists \/ Unit]
-  def status: F[BookingStatus]
-  def cancel: F[BookingUnknown.type \/ Unit]
+  def get: F[BookingUnknown.type \/ Booking]
   def changeOrigin(newOrigin: LatLon): F[BookingUnknown.type \/ Unit]
   def changeDestination(newDestination: LatLon): F[BookingUnknown.type \/ Unit]
   def changeOriginAndDestination(

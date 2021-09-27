@@ -5,8 +5,9 @@ import akka.persistence.tagless.circe.{CirceCommandProtocol, CirceDecoder}
 import akka.persistence.tagless.core.typeclass.protocol.{Decoder, IncomingCommand, OutgoingCommand}
 import akka.persistence.tagless.example.algebra.BookingAlg
 import akka.persistence.tagless.example.algebra.BookingAlg.{BookingAlreadyExists, BookingUnknown}
-import akka.persistence.tagless.example.data.Booking.{BookingID, BookingStatus, LatLon}
+import akka.persistence.tagless.example.data.Booking.{BookingID, LatLon}
 import BookingCommand._
+import akka.persistence.tagless.example.data.Booking
 import io.circe.Json
 import io.circe.generic.auto._
 
@@ -23,13 +24,8 @@ class BookingCommandProtocol extends CirceCommandProtocol[BookingAlg] {
           PlaceBooking(bookingID, passengerCount, origin, destination)
         )
 
-      def status: OutgoingCommand[Json, BookingStatus] =
-        outgoingCommand[BookingCommand, BookingStatus](BookingCommand.Status)
-
-      def cancel: OutgoingCommand[Json, BookingUnknown.type \/ Unit] =
-        outgoingCommand[BookingCommand, BookingUnknown.type \/ Unit](
-          Cancel
-        )
+      def get: OutgoingCommand[Json, BookingUnknown.type \/ Booking] =
+        outgoingCommand[BookingCommand, BookingUnknown.type \/ Booking](Get)
 
       def changeOrigin(
           newOrigin: LatLon
@@ -65,8 +61,7 @@ class BookingCommandProtocol extends CirceCommandProtocol[BookingAlg] {
         incomingCommand[F, BookingAlreadyExists \/ Unit](
           _.place(rideID, passengerCount, origin, destination)
         )
-      case Status => incomingCommand[F, BookingStatus](_.status)
-      case Cancel => incomingCommand[F, BookingUnknown.type \/ Unit](_.cancel)
+      case Get => incomingCommand[F, BookingUnknown.type \/ Booking](_.get)
       case ChangeOrigin(newOrigin) =>
         incomingCommand[F, BookingUnknown.type \/ Unit](_.changeOrigin(newOrigin))
       case ChangeDestination(newDestination) =>

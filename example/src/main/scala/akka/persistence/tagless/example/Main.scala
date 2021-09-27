@@ -55,10 +55,11 @@ object Main extends IOApp {
             case Right(_) => Accepted(bookingID)
           }
         } yield result
-      case GET -> Root / "booking" / UUIDVar(id) / "status" =>
-        bookingRepository.bookingFor(BookingID(id)).status.flatMap(Ok(_))
-      case POST -> Root / "booking" / UUIDVar(id) / "cancel" =>
-        bookingRepository.bookingFor(BookingID(id)).cancel.flatMap(_ => Ok())
+      case GET -> Root / "booking" / UUIDVar(id) =>
+        bookingRepository.bookingFor(BookingID(id)).get.flatMap {
+          case Right(booking) => Ok(booking)
+          case Left(_)        => BadRequest(show"Booking with $id doesn't exist")
+        }
       case req @ PATCH -> Root / "booking" / UUIDVar(id) =>
         for {
           bookingPatch <- req.as[BookingPatch]
@@ -78,7 +79,7 @@ object Main extends IOApp {
           }
           result <- reply match {
             case Left(_) =>
-              BadRequest(show"Booking with $id is unknown")
+              BadRequest(show"Booking with $id doesn't exist")
             case Right(_) => Ok()
           }
         } yield result

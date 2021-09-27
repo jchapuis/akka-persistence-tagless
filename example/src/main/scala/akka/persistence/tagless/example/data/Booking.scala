@@ -9,8 +9,7 @@ final case class Booking(
     id: BookingID,
     origin: LatLon,
     destination: LatLon,
-    passengerCount: Int,
-    status: BookingStatus
+    passengerCount: Int
 )
 
 object Booking {
@@ -18,12 +17,5 @@ object Booking {
   final case class LatLon(lat: Double, lon: Double)
   object LatLon {
     implicit val eq: Eq[LatLon] = Eq.fromUniversalEquals
-  }
-  sealed trait BookingStatus
-  object BookingStatus {
-    object Pending extends BookingStatus
-    object Scheduled extends BookingStatus
-    object Canceled extends BookingStatus
-    object Unknown extends BookingStatus
   }
 }

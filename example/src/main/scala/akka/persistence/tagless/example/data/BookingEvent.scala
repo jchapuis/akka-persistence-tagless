@@ -11,7 +11,6 @@ object BookingEvent {
       destination: LatLon,
       passengerCount: Int
   ) extends BookingEvent
-  final object BookingCancelled extends BookingEvent
   final case class OriginChanged(newOrigin: LatLon) extends BookingEvent
   final case class DestinationChanged(newDestination: LatLon) extends BookingEvent
 }

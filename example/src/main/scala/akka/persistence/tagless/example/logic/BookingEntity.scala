@@ -32,13 +32,7 @@ final case class BookingEntity[F[_]: Monad](entity: Entity[F, Option[Booking], B
           .map(_.asRight)
     }
 
-  def cancel: F[BookingUnknown.type \/ Unit] =
-    ifKnown(_ => entity.write(BookingCancelled))
-
-  def status: F[BookingStatus] = read >>= {
-    case Some(booking) => booking.status.pure
-    case None          => BookingStatus.Unknown.pure[F]
-  }
+  def get: F[BookingUnknown.type \/ Booking] = ifKnown(_.pure)
 
   def changeOrigin(newOrigin: LatLon): F[BookingUnknown.type \/ Unit] =
     ifKnown(booking =>
@@ -47,7 +41,7 @@ final case class BookingEntity[F[_]: Monad](entity: Entity[F, Option[Booking], B
 
   def changeDestination(newDestination: LatLon): F[BookingUnknown.type \/ Unit] =
     ifKnown(booking =>
-      if (booking.destination =!= newDestination) entity.write(OriginChanged(newDestination))
+      if (booking.destination =!= newDestination) entity.write(DestinationChanged(newDestination))
       else ().pure
     )
 
